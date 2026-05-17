@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "start": "node src/app.js",
-  "dev": "nodemon src/app.js",
-  "test": "jest --runInBand"
-},
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest --runInBand"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/prashantsinghrajput76/rate_limiter.git"
@@ -21,7 +21,8 @@
   },
   "homepage": "https://github.com/prashantsinghrajput76/rate_limiter#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",
