@@ -13,6 +13,7 @@ afterAll(async () => {
   await redis.quit();
 });
 
+
 describe('Day 1 — Token Bucket middleware', () => {
   it('sets rate limit headers on responses', async () => {
     const res = await request(app).get('/health');
@@ -45,6 +46,7 @@ describe('Day 1 — Token Bucket middleware', () => {
     expect(Number(res.headers['retry-after'])).toBeGreaterThan(0);
   });
 });
+
 
 describe('Day 2 — Sliding Window Log (/api/search)', () => {
   it('allows requests within the limit', async () => {
@@ -111,5 +113,57 @@ describe('Day 2 — Sliding Window Counter (/api/feed)', () => {
     const b = await request(app).get('/api/feed').set('x-user-id', 'feed-B');
     expect(a.status).toBe(200);
     expect(b.status).toBe(200);
+  });
+});
+
+
+describe('Day 3 — Multi-tier stacked limiters (/api/premium)', () => {
+  it('allows requests within both tier limits', async () => {
+    const res = await request(app)
+      .get('/api/premium')
+      .set('x-user-id', 'premium-user-1');
+    expect(res.status).toBe(200);
+    expect(res.body.tier).toBe('premium');
+  });
+
+  it('returns userId in response', async () => {
+    const res = await request(app)
+      .get('/api/premium')
+      .set('x-user-id', 'premium-user-2');
+    expect(res.body.userId).toBe('premium-user-2');
+  });
+
+  it('includes rate limit headers from both limiters', async () => {
+    const res = await request(app)
+      .get('/api/premium')
+      .set('x-user-id', 'premium-user-3');
+    expect(res.headers['x-ratelimit-limit']).toBeDefined();
+    expect(res.headers['x-ratelimit-remaining']).toBeDefined();
+  });
+});
+
+describe('Day 3 — Prometheus metrics endpoint', () => {
+  it('exposes /metrics endpoint', async () => {
+    const res = await request(app).get('/metrics');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/text\/plain/);
+  });
+
+  it('contains rate limiter metrics after requests', async () => {
+    await request(app).get('/api/search').set('x-user-id', 'metrics-test');
+
+    const res = await request(app).get('/metrics');
+    expect(res.text).toContain('rate_limiter_requests_total');
+    expect(res.text).toContain('rate_limiter_consume_duration_ms');
+  });
+
+  it('tracks rejected requests in metrics', async () => {
+    for (let i = 0; i < 10; i++) {
+      await request(app).get('/api/search').set('x-user-id', 'metrics-reject-user');
+    }
+    await request(app).get('/api/search').set('x-user-id', 'metrics-reject-user');
+
+    const res = await request(app).get('/metrics');
+    expect(res.text).toContain('result="rejected"');
   });
 });

@@ -1,0 +1,7 @@
+node_modules
+tests
+*.test.js
+loadtest.js
+.env
+.git
+README.md
